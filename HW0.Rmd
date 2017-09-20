@@ -1,0 +1,46 @@
+---
+title: "HW0"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 提案報告
+
+題目：台大學生是否能兼顧運動與課業？
+
+資料源：
+1.台大歷年各校隊選手名單（https://www.youtube.com/watch?time_continue=1&v=hj4yCPqD8-U）（http://ntuallstar.pixnet.net/blog）（http://www.nturugby.org.tw/index.php?option=com_flexicontent&view=category&cid=10&Itemid=177）...
+
+2.台大歷年書卷獎名單（http://www.aca.ntu.edu.tw/aca2012/reg/STATUTE/1051%E5%AD%B8%E6%A5%AD%E6%88%90%E7%B8%BE%E5%84%AA%E8%89%AF%E5%AD%B8%E7%94%9F%E5%90%8D%E5%96%AE.pdf）...
+
+3.台大歷年碩士班錄取名單（http://www.aca.ntu.edu.tw/aca2012/gra/access/accma/aboard-b08.asp?id=13）...
+
+參考資料：https://udn.com/news/story/7/2213936
+
+圖表呈現方式：長條圖 折線圖
+
+異質來源新表產生：與其他大學相比較
+
+
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
