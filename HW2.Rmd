@@ -1,0 +1,118 @@
+---
+title: "HW2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+library(dplyr)
+
+#讀取資料
+data <- read.csv("/Users/momo/Desktop/titanic.csv", header=T)
+head(data)
+
+#整理資料
+
+將乘客及員工的資料分開，以方便後續討論
+並剔除資料中為9999的值
+
+passenger <- data[data$class %in% c(1,2,3),]
+crew <- data[!data$class %in% c(1,2,3),]
+
+passenger <- passenger[!passenger$fare == 9999,]
+passenger <- passenger[!passenger$age == 9999,]
+crew <- crew[!crew$age == 9999,]
+
+head(passenger)
+head(crew)
+
+#船員及乘客的基本敘述統計
+
+乘客年齡分佈
+summary(passenger$age)
+船員年齡分佈
+summary(crew$age)
+乘客性別分佈
+table(passenger$gender)
+船員性別分佈
+table(crew$gender) 
+
+#問題一 老小與青壯年存活率比較
+
+因船員年齡較為集中，此處僅用乘客資料
+
+young <- select(passenger, survival, age) %>%
+  filter(age < 18)
+table(young)
+young_live <- sum(young$survival == 1)
+young_dead <- sum(young$survival == 0)
+young_all <- length(young$survival)
+print (young_live / young_all)
+
+old <- select(passenger, survival, age) %>%
+  filter(age >= 65)
+table(old)
+old_live <- sum(old$survival == 1) 
+old_dead <- sum(old$survival == 0) 
+old_all <- length(old$survival) 
+print (old_live / old_all)
+
+normal <- select(passenger, survival, age) %>%
+  filter(age >= 18 & age < 65)
+table(normal)
+normal_live <- sum(normal$survival == 1) 
+normal_dead <- sum(normal$survival == 0) 
+normal_all <- length(normal$survival) 
+print (normal_live / normal_all)
+
+未成年小孩的存活率最高 -> 推測大家會先讓小孩上救生艇
+老年人的存活率為0 -> 推測老年人可能體力較為不濟或身體狀況稍差
+
+#問題二 乘客艙房等級與存活率的關係
+
+Class1 <- select(passenger, survival, class) %>%
+  filter(class == 1)
+Class1_live <- sum(Class1$survival == 1) 
+Class1_dead <- sum(Class1$survival == 0) 
+Class1_all <- length(Class1$survival) 
+print (Class1_live / Class1_all)
+
+Class2 <- select(passenger, survival, class) %>%
+  filter(class == 2)
+Class2_live <- sum(Class2$survival == 1) 
+Class2_dead <- sum(Class2$survival == 0) 
+Class2_all <- length(Class2$survival) 
+print (Class2_live / Class2_all)
+
+Class3 <- select(passenger, survival, class) %>%
+  filter(class == 3)
+Class3_live <- sum(Class3$survival == 1) 
+Class3_dead <- sum(Class3$survival == 0) 
+Class3_all <- length(Class3$survival) 
+print (Class3_live / Class3_all)
+
+艙房等級越高，存活率越大 -> 推測較高級的艙房擁有較優良的逃生路線與救生艇
+
+#問題三 是否獨自登船與死亡率的關係
+
+Name <- strsplit(as.character(passenger$name), ',', fixed = TRUE) %>%
+  unlist() 
+Name <- Name[seq(1,length(Name)-2,2)] 
+head(Name)
+
+family <- names(table(Name)[table(Name) > 1])
+passenger$lastname <- Name
+head(p_lastname)
+passenger$singal <- rep(1, length(passenger$lastname)) 
+passenger$singal[passenger$lastname %in% family] = 0
+
+p_table <- table(passenger$survival, passenger$singal)
+p_table
+
+famliy_dead_rate <- p_table[1,1] / (p_table[1,1] + p_table[2,1])
+singal_dead_rate <- p_table[1,2] / (p_table[1,2] + p_table[2,2])
+print (famliy_dead_rate)
+print (singal_dead_rate)
+
+獨自登船之乘客死亡率較家庭共同登船之乘客稍高 -> 推測家庭成員會想辦法讓小孩能坐上救生艇，獨自登船的旅客也較易先幫助他人逃生
