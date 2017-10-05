@@ -9,13 +9,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 library(dplyr)
 ```
-#讀取資料
+##讀取資料
 ```{}
 data <- read.csv("/Users/momo/Desktop/titanic.csv", header=T)
 head(data)
 ```
 
-#整理資料
+##整理資料
 
 將乘客及員工的資料分開，以方便後續討論
 並剔除資料中為9999的值
@@ -41,7 +41,7 @@ table(passenger$gender)
 船員性別分佈
 table(crew$gender) 
 ```
-#問題一 老小與青壯年存活率比較
+##問題一 老小與青壯年存活率比較
 
 因船員年齡較為集中，此處僅用乘客資料
 ```{}
@@ -72,7 +72,7 @@ print (normal_live / normal_all)
 未成年的存活率最高 -> 推測大家會先讓小孩上救生艇\
 老年人的存活率為0 -> 推測老年人可能體力較為不濟或身體狀況稍差
 
-#問題二 乘客艙房等級與存活率的關係
+##問題二 乘客艙房等級與存活率的關係
 ```{}
 Class1 <- select(passenger, survival, class) %>%
   filter(class == 1)
@@ -97,7 +97,7 @@ print (Class3_live / Class3_all)
 ```
 艙房等級越高，存活率越大 -> 推測較高級的艙房擁有較優良的逃生路線與救生艇
 
-#問題三 是否獨自登船與死亡率的關係
+##問題三 是否獨自登船與死亡率的關係
 ```{}
 Name <- strsplit(as.character(passenger$name), ',', fixed = TRUE) %>%
   unlist() 
