@@ -7,14 +7,13 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-```{}
+
 library(dplyr)
-library(ggplot)
+library(ggplot2)
 ```
 #讀取資料
-```{}
-data <- read.csv("/Users/momo/Desktop/titanic.csv", header=T)
+```{r}
+data <- read.csv("/Users/momo/Desktop/R\ /titanic.csv", header=T)
 head(data)
 ```
 
@@ -22,7 +21,7 @@ head(data)
 
 將乘客及員工的資料分開，以方便後續討論
 並剔除資料中為9999的值
-```{}
+```{r}
 passenger <- data[data$class %in% c(1,2,3),]
 crew <- data[!data$class %in% c(1,2,3),]
 
@@ -33,8 +32,9 @@ crew <- crew[!crew$age == 9999,]
 head(passenger)
 head(crew)
 ```
+
 #船員及乘客的基本統計
-```{}
+```{r}
 #乘客年齡分佈
 summary(passenger$age)
 ggplot(data = passenger, aes(x = passenger$age)) + 
@@ -55,7 +55,7 @@ ggplot(data = crew, aes(x = crew$gender)) +
 #問題一 老小與青壯年存活率比較
 
 因船員年齡較為集中，此處僅用乘客資料
-```{}
+```{r}
 young <- select(passenger, survival, age) %>%
   filter(age < 18)
 
@@ -101,7 +101,7 @@ ggplot(data = Age, aes(x = people, y = sur_rate, fill = people)) +
 老年人的存活率為0 -> 推測老年人可能體力較為不濟或身體狀況較差或較看淡生死
 
 #問題二 乘客艙房等級與存活率的關係
-```{}
+```{r}
 Class1 <- select(passenger, survival, class) %>%
   filter(class == 1)
 
@@ -138,7 +138,7 @@ ggplot(data = CLASS, aes(x = Class, y = sur_rate, fill = Class)) +
 艙房等級越高，存活率越大 -> 推測居住於較高級艙房的旅客擁有較優良的逃生路線與救生艇
 
 #問題三 是否獨自登船與存活率的關係
-```{}
+```{r}
 Name <- strsplit(as.character(passenger$name), ',', fixed = TRUE) %>%
   unlist() 
 Name <- Name[seq(1,length(Name)-2,2)] 
@@ -167,7 +167,7 @@ ggplot(data = fam_or_sin, aes(status, sur_rate, fill = status)) +
 較家庭共同登船之乘客存活率較獨自登船之乘客稍高 -> 推測家庭成員會想辦法讓小孩能坐上救生艇，獨自登船的旅客也較易先幫助他人逃生
 
 #問題四 救生艇承載人數與登船旅客之艙級比較
-```{}
+```{r}
 tmp <- data %>%
   group_by(boat) %>%
   filter(boat %in% c(1:16, "A", "B", "C", "D")) %>%
