@@ -1,0 +1,108 @@
+---
+title: "HW3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+rm(list = ls(all.names=TRUE))
+library(httr)
+library(rjson)
+library(httpuv)
+library(Rfacebook)
+```
+
+```{r}
+token = "EAACEdEose0cBAIpVrg9ufUIrDmZBODmAbEB5mH7Xsf6ZB9SzsTresaoRhZCtiZAKZAXDwRmrdmlfCsAXJcZB9FlI1sqaOdWzY4Bas81zEhgBf9swBNfGYQ9ZAfPLX2wDcOHx6O33JDZBDJ9EHATrnoV6NPZC8ZBIBxMI5wnUMYuoC83cXOkTa83u20zV8HZCeU1B2UuauqZBfcVeYAZDZD"
+url = sprintf("https://graph.facebook.com/v2.10/136845026417486_1156494751119170?fields=comments&access_token=%s",token)
+
+res = GET(url)
+data = content(res)
+data1 <- matrix(unlist(data$comments$data))
+comments <- data1[seq(4, length(data1), 5), ]
+comments <- as.data.frame(comments)
+
+cnt = 1
+
+while(TRUE)
+{
+  if (cnt == 1)
+    nexturl = unlist(data$comments$paging[2])
+  else 
+    nexturl = unlist(data$paging[2])
+  
+  nextres = GET(nexturl)
+  ndata = content(nextres)
+  ndata1 <- matrix(unlist(ndata$data))
+  ncomments <- ndata1[seq(4, length(ndata1), 5), ]
+  ncomments <- as.data.frame(ncomments)
+  names(ncomments) = names(comments)
+  
+  comments <- rbind(comments, ncomments)  
+  data <- ndata
+  
+  cnt = cnt + 1
+  #print (names(data$paging[2]))
+  if(names(data$paging[2]) == "previous") break
+}
+
+write.table(comments, file = "comments.csv")
+```
+
+```{r}
+library(NLP)
+library(tm)
+library(jiebaRD)
+library(jiebaR)
+library(RColorBrewer)
+library(wordcloud)
+```
+
+```{r}
+#file <- read.table("/Users/momo/Desktop/R\ /comments.txt")
+filenames <- list.files(getwd(), pattern="*.txt")
+files <- lapply(filenames, readLines)
+docs <- Corpus(VectorSource(files))
+
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+docs <- tm_map(docs, toSpace, "\n")
+docs <- tm_map(docs,toSpace, "的")
+docs <- tm_map(docs,toSpace, "了")
+docs <- tm_map(docs,toSpace, "是")
+docs <- tm_map(docs,toSpace, "都")
+docs <- tm_map(docs,toSpace, "你")
+docs <- tm_map(docs,toSpace, "我")
+docs <- tm_map(docs,toSpace, "很")
+docs <- tm_map(docs,toSpace, "也")
+docs <- tm_map(docs,toSpace, "嗎")
+docs <- tm_map(docs,toSpace, "讓")
+docs <- tm_map(docs,toSpace, "和")
+docs <- tm_map(docs, removePunctuation)
+docs <- tm_map(docs, removeNumbers)
+docs <- tm_map(docs, stripWhitespace)
+
+mixseg = worker()
+segment <- c("世大運", "柯p", "柯P", "柯市長", "柯文哲", "台灣人")
+new_user_word(mixseg,segment)
+mixseg[unlist(docs)]
+
+
+jieba_tokenizer=function(d){
+  unlist(segment(d[[1]],mixseg))
+}
+seg = lapply(docs, jieba_tokenizer)
+freqFrame = as.data.frame(table(unlist(seg)))
+freqFrame = freqFrame[order(freqFrame$Freq,decreasing=TRUE), ]
+library(knitr)
+kable(head(freqFrame), format = "markdown")
+
+par(family=("Heiti TC Light"))
+wordcloud(freqFrame$Var1,freqFrame$Freq,
+          scale=c(5,0.1),min.freq=20,max.words=150,
+          random.order=TRUE, random.color=FALSE, 
+          rot.per=.1, colors=brewer.pal(8, "Dark2"),
+          ordered.colors=FALSE,use.r.layout=FALSE,
+          fixed.asp=TRUE)
+```
