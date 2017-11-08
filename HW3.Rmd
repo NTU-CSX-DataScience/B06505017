@@ -6,16 +6,16 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+##擷取資料
+收集台北市長柯文哲臉書粉專上有關「世大運」一文的網友留言
 ```{r}
 rm(list = ls(all.names=TRUE))
 library(httr)
 library(rjson)
 library(httpuv)
 library(Rfacebook)
-```
 
-```{r}
-token = "EAACEdEose0cBAIpVrg9ufUIrDmZBODmAbEB5mH7Xsf6ZB9SzsTresaoRhZCtiZAKZAXDwRmrdmlfCsAXJcZB9FlI1sqaOdWzY4Bas81zEhgBf9swBNfGYQ9ZAfPLX2wDcOHx6O33JDZBDJ9EHATrnoV6NPZC8ZBIBxMI5wnUMYuoC83cXOkTa83u20zV8HZCeU1B2UuauqZBfcVeYAZDZD"
+token = "EAACEdEose0cBAPIGxXAvf3ZBRmZAOAgQtZCnDRNG0N4AnWnkIKxRComLi0x5MQlnZAmepWccehpZAQYG2teTMZCzjIXlrUV2zk2LJT4cWxIkGKxi65YCAw3aTwUwV3ZBiVAVAc1q2irZCRTMZCwyXqozIYs0OxeMiVtZBZCZBbrvJI4qU8W8zNJGNQ26NTCTp2VWtnzsvAEDEfVn9QZDZD"
 url = sprintf("https://graph.facebook.com/v2.10/136845026417486_1156494751119170?fields=comments&access_token=%s",token)
 
 res = GET(url)
@@ -48,24 +48,29 @@ while(TRUE)
   if(names(data$paging[2]) == "previous") break
 }
 
-write.table(comments, file = "comments.csv")
+#將擷取下來的留言存成txt檔
+write.table(comments, file = "comments.txt")
 ```
+##清理文本並建立詞頻矩陣
 
 ```{r}
 library(NLP)
 library(tm)
+library(tmcn)
 library(jiebaRD)
 library(jiebaR)
 library(RColorBrewer)
 library(wordcloud)
-```
 
-```{r}
-#file <- read.table("/Users/momo/Desktop/R\ /comments.txt")
-filenames <- list.files(getwd(), pattern="*.txt")
-files <- lapply(filenames, readLines)
-docs <- Corpus(VectorSource(files))
+#單個檔案時的讀取方法
+file = readLines("comments.txt")
 
+#多個檔案時的讀取方法
+#filenames <- list.files(getwd(), pattern="*.txt")
+#files <- lapply(filenames, readLines)
+#docs <- Corpus(VectorSource(files))
+
+#清理文本
 toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
 docs <- tm_map(docs, toSpace, "\n")
 docs <- tm_map(docs,toSpace, "的")
@@ -83,25 +88,31 @@ docs <- tm_map(docs, removePunctuation)
 docs <- tm_map(docs, removeNumbers)
 docs <- tm_map(docs, stripWhitespace)
 
+#新增字詞以加強斷詞準確度
 mixseg = worker()
 segment <- c("世大運", "柯p", "柯P", "柯市長", "柯文哲", "台灣人")
 new_user_word(mixseg,segment)
 mixseg[unlist(docs)]
 
-
+#建立詞頻矩陣
 jieba_tokenizer=function(d){
   unlist(segment(d[[1]],mixseg))
 }
 seg = lapply(docs, jieba_tokenizer)
 freqFrame = as.data.frame(table(unlist(seg)))
 freqFrame = freqFrame[order(freqFrame$Freq,decreasing=TRUE), ]
-library(knitr)
-kable(head(freqFrame), format = "markdown")
+#library(knitr)
+#kable(head(freqFrame), format = "markdown")
 
+```
+
+##製作文字雲
+從文字雲的結果可看出，對於世大運，網友對於柯文哲市長給予相當正面的回應。且由「台灣」、「台灣人」等詞可看出，因為世大運為國際賽事，也激起了國人的團結愛國情操。
+```{r}
 par(family=("Heiti TC Light"))
 wordcloud(freqFrame$Var1,freqFrame$Freq,
-          scale=c(5,0.1),min.freq=20,max.words=150,
-          random.order=TRUE, random.color=FALSE, 
+          scale=c(4,1),min.freq=20,max.words=150,
+          random.order=FALSE, random.color=FALSE, 
           rot.per=.1, colors=brewer.pal(8, "Dark2"),
           ordered.colors=FALSE,use.r.layout=FALSE,
           fixed.asp=TRUE)
