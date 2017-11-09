@@ -15,12 +15,13 @@ library(rjson)
 library(httpuv)
 library(Rfacebook)
 
-token = "EAACEdEose0cBAPIGxXAvf3ZBRmZAOAgQtZCnDRNG0N4AnWnkIKxRComLi0x5MQlnZAmepWccehpZAQYG2teTMZCzjIXlrUV2zk2LJT4cWxIkGKxi65YCAw3aTwUwV3ZBiVAVAc1q2irZCRTMZCwyXqozIYs0OxeMiVtZBZCZBbrvJI4qU8W8zNJGNQ26NTCTp2VWtnzsvAEDEfVn9QZDZD"
+token = "EAACEdEose0cBALSvdT5pTeZC1QekXkBNSDA3rPXoIgdH6qyJEA00MogctjElzNRZBsRjfrC09eaw6W6ZBhZB8ZAD5YluKzOyUfBCpXYeKaGIwjXVVSJO94Tu8VaMZBj5AXgPEV3gmdFmvJuuQSGRBI2ozyT2kCFrVD4miF1hKztlbOoy68l5MsGLZCBdhlBBNdSJOFTCuEIZAwZDZD"
 url = sprintf("https://graph.facebook.com/v2.10/136845026417486_1156494751119170?fields=comments&access_token=%s",token)
 
 res = GET(url)
 data = content(res)
 data1 <- matrix(unlist(data$comments$data))
+#只截取留言，不擷取留言者和時間
 comments <- data1[seq(4, length(data1), 5), ]
 comments <- as.data.frame(comments)
 
@@ -44,7 +45,6 @@ while(TRUE)
   data <- ndata
   
   cnt = cnt + 1
-  #print (names(data$paging[2]))
   if(names(data$paging[2]) == "previous") break
 }
 
@@ -64,6 +64,7 @@ library(wordcloud)
 
 #單個檔案時的讀取方法
 file = readLines("comments.txt")
+docs <- Corpus(VectorSource(file))
 
 #多個檔案時的讀取方法
 #filenames <- list.files(getwd(), pattern="*.txt")
@@ -92,7 +93,6 @@ docs <- tm_map(docs, stripWhitespace)
 mixseg = worker()
 segment <- c("世大運", "柯p", "柯P", "柯市長", "柯文哲", "台灣人")
 new_user_word(mixseg,segment)
-mixseg[unlist(docs)]
 
 #建立詞頻矩陣
 jieba_tokenizer=function(d){
@@ -109,7 +109,7 @@ freqFrame = freqFrame[order(freqFrame$Freq,decreasing=TRUE), ]
 ##製作文字雲
 從文字雲的結果可看出，對於世大運，網友對於柯文哲市長給予相當正面的回應。且由「台灣」、「台灣人」等詞可看出，因為世大運為國際賽事，也激起了國人的團結愛國情操。
 ```{r}
-par(family=("Heiti TC Light"))
+par(family=("Heiti TC Light")) #mac上的中文字體問題，必須加上這行字才不會變成框框
 wordcloud(freqFrame$Var1,freqFrame$Freq,
           scale=c(4,1),min.freq=20,max.words=150,
           random.order=FALSE, random.color=FALSE, 
