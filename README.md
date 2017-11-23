@@ -1,4 +1,4 @@
-# B06505017 https://momo1106shiny.shinyapps.io/momoTest/
+# B06505017 
 
 作業一：RMakrdown 提案書 https://ntu-csx-datascience.github.io/B06505017/HW1.html
 
@@ -7,3 +7,5 @@
 作業三：文字雲 https://ntu-csx-datascience.github.io/B06505017/HW3.html
 
 作業四：TF-IDF & Kmeans
+
+ShinyTest：https://momo1106shiny.shinyapps.io/momoTest/
