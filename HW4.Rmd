@@ -1,0 +1,203 @@
+---
+title: "HW4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##擷取資料
+收集ptt NBA板上最近320篇貼文與其留言
+```{r}
+rm(list = ls(all.names=TRUE))
+library(rvest)
+library(tmcn)
+for (index in c(5340:5355)) {
+  url = paste0("https://www.ptt.cc/bbs/NBA/index", index, ".html")
+  html = read_html(url)
+  title = html_nodes(html, "a")
+  href = html_attr(title, "href")
+  data = data.frame(title = toUTF8(html_text(title)), href = href)
+
+  data = data[-c(1:10), ]
+
+  getContent <- function(x, id) {
+    url = paste0("https://www.ptt.cc", x)
+    tag = html_node(read_html(url), 'div#main-content.bbs-screen.bbs-content')
+    text = toUTF8(html_text(tag))
+    filename = paste0(index,'-',id,".txt")
+    write.table(text, filename)
+  }
+  
+  id = 1
+  for (pg in data$href) {
+    getContent(pg, id)
+    id = id + 1
+  }
+}
+```
+##清理文本並用jieba套件進行斷詞
+```{r}
+
+library(NLP)
+library(tm)
+library(jiebaRD)
+library(jiebaR)
+
+filenames <- list.files(getwd(), pattern="*.txt")
+files <- lapply(filenames, readLines)
+docs <- Corpus(VectorSource(files))
+
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+docs <- tm_map(docs,toSpace, "※")
+docs <- tm_map(docs,toSpace, "→")
+docs <- tm_map(docs,toSpace, "\n")
+docs <- tm_map(docs,toSpace, "的")
+docs <- tm_map(docs,toSpace, "就")
+docs <- tm_map(docs,toSpace, "吧")
+docs <- tm_map(docs,toSpace, "被")
+docs <- tm_map(docs,toSpace, "啊")
+docs <- tm_map(docs,toSpace, "但")
+docs <- tm_map(docs,toSpace, "又")
+docs <- tm_map(docs,toSpace, "了")
+docs <- tm_map(docs,toSpace, "是")
+docs <- tm_map(docs,toSpace, "啦")
+docs <- tm_map(docs,toSpace, "都")
+docs <- tm_map(docs,toSpace, "你")
+docs <- tm_map(docs,toSpace, "我")
+docs <- tm_map(docs,toSpace, "很")
+docs <- tm_map(docs,toSpace, "也")
+docs <- tm_map(docs,toSpace, "嗎")
+docs <- tm_map(docs,toSpace, "讓")
+docs <- tm_map(docs,toSpace, "和")
+docs <- tm_map(docs,toSpace, "推")
+docs <- tm_map(docs,toSpace, "噓")
+docs <- tm_map(docs,toSpace, "看板")
+docs <- tm_map(docs,toSpace, "Oct")
+docs <- tm_map(docs, removePunctuation)
+docs <- tm_map(docs, removeNumbers)
+docs <- tm_map(docs, stripWhitespace)
+
+mixseg = worker()
+#segment <- c("Kyrie Irving")
+#new_user_word(mixseg,segment)
+mixseg[unlist(docs)]
+
+
+jieba_tokenizer = function(d){
+  unlist(segment(d[[1]],mixseg))
+}
+```
+##建立詞頻矩陣
+```{r}
+seg = lapply(docs, jieba_tokenizer)
+freqFrame = as.data.frame(table(unlist(seg)))
+freqFrame = freqFrame[order(freqFrame$Freq,decreasing=TRUE), ]
+freqFrame
+```
+##利用corpus套件將文章轉成詞頻矩陣
+```{r}
+d.corpus <- Corpus(VectorSource(seg))
+tdm <- TermDocumentMatrix(d.corpus, control = list(wordLengths = c(2, Inf)))
+inspect(tdm)
+```
+查找與「勇士隊」最相關的詞彙和其相關程度，並以圖表呈現。
+
+由直方圖「全票」、「mvp」、「勇士」、「咖哩」、「輸」、「丟人」可看出，網友對於總冠軍的討論，仍圍繞在去年的冠軍賽上（勇士以破紀錄例行賽73勝9負、Curry拿下史上第一個全票通過MVP的成績，不幸在冠軍賽落敗）。
+
+```{r}
+library(ggplot2)
+
+ass = findAssocs(tdm, "冠軍", 0.45)
+g <- unlist(ass)
+g <- cbind(names(g), g) %>% as.data.frame()
+colnames(g) <- c("關聯詞", "關聯度")
+#par(family=("Heiti TC Light"))
+G <- ggplot(g, aes(x = 關聯詞, y = 關聯度)) + geom_bar(stat = 'identity') + labs(x = '關聯詞',y = '關聯度')
+G <- G + theme(axis.title = element_text(family = "Heiti TC Light"),
+          axis.text.x = element_text(angle = 60, family = "Heiti TC Light", hjust = 1))
+print (G)
+```
+##建立TF-IDF矩陣
+```{r}
+
+library(rJava)
+library(SnowballC)
+library(slam)
+library(Matrix)
+
+N = tdm$ncol
+tf <- apply(tdm, 2, sum)
+idfCal <- function(word_doc)
+{
+  log2( N / nnzero(word_doc) )
+}
+idf <- apply(tdm, 1, idfCal)
+
+doc.tfidf <- as.matrix(tdm)
+for(x in 1:nrow(tdm))
+{
+  for(y in 1:ncol(tdm))
+  {
+    doc.tfidf[x,y] <- (doc.tfidf[x,y] / tf[y]) * idf[x]
+  }
+}
+```
+##繪製與「冠軍」高度相關的詞的TF-IDF統計圖
+由圖可看出，Curry與其所屬隊伍勇士隊往往會伴隨著有關討論有關總冠軍話題的文章出現。
+```{r}
+library(plotly)
+topID = lapply(rownames(as.data.frame(ass)), function(x)
+  which(rownames(tdm) == x))
+topID = unlist(topID)
+
+
+plot_ly(data = as.data.frame(doc.tfidf),
+        x = as.numeric(colnames(doc.tfidf)),
+        y = doc.tfidf[topID[1],],
+        name = rownames(doc.tfidf)[topID[1]],
+        type = "scatter", mode = "box") %>%
+  add_trace(y = doc.tfidf[topID[3],],
+            name = rownames(doc.tfidf)[topID[3]]) %>%
+  add_trace(y = doc.tfidf[topID[6],],
+            name = rownames(doc.tfidf)[topID[6]])
+```
+##透過 Elbow Method 找出最佳集群數目（optimal number of clusters）
+```{r}
+mydata <- t(doc.tfidf)
+wss <- (nrow(mydata)-1) * sum(apply(mydata,2,var))
+for (i in 2:300)
+  wss[i] <- sum(kmeans(mydata,centers=i)$withinss)
+
+plot(1:300, wss, type = "b", xlab = "Number of Clusters",
+     ylab = "Within groups sum of squares",
+     main = "Assessing the Optimal Number of Clusters with the Elbow Method",
+     pch = 20, cex = 2)
+```
+```{r}
+num_clusters = length(which(unlist(wss) > 0.5)) +1
+num_clusters
+```
+利用上面所求得的最佳群集數目，將文章作K-Means Clustering
+```{r}
+kmeansOut = kmeans(mydata, num_clusters, nstart = 1, algorithm = c("Lloyd"), iter.max = 30)
+mydata.pca = prcomp(mydata)
+mydata.kmeans = as.factor(kmeansOut$cluster)
+
+kmeans_clustering <- as.data.frame(mydata.kmeans)
+kmeans_clustering
+```
+##利用PCA降維作圖
+由圖可看出，文章並沒有所謂明顯的分群，推測是由於NBA版為PTT上的某一分類看板，討論的主題已被歸類，因此較難再加以分群。
+```{r}
+
+library(ggbiplot)
+
+g1 <- ggbiplot(mydata.pca, obs.scale = 1, var.scale = 1,
+              groups = mydata.kmeans, ellipse = TRUE,
+              circle = TRUE, labels = rownames(mydata))
+g1 <- g1 + scale_color_discrete(name = '')
+g1 <- g1 + theme(legend.direction = 'horizontal',
+               legend.position = 'top')
+print (g1)
+```
