@@ -1,4 +1,4 @@
----
+ ---
 title: "HW4"
 output: html_document
 ---
@@ -7,37 +7,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ##擷取資料
-收集ptt NBA板上最近320篇貼文與其留言
-```{r}
-rm(list = ls(all.names=TRUE))
-library(rvest)
-library(tmcn)
-for (index in c(5340:5355)) {
-  url = paste0("https://www.ptt.cc/bbs/NBA/index", index, ".html")
-  html = read_html(url)
-  title = html_nodes(html, "a")
-  href = html_attr(title, "href")
-  data = data.frame(title = toUTF8(html_text(title)), href = href)
+收集PTT NBA板上最近320篇貼文與其留言
 
-  data = data[-c(1:10), ]
-
-  getContent <- function(x, id) {
-    url = paste0("https://www.ptt.cc", x)
-    tag = html_node(read_html(url), 'div#main-content.bbs-screen.bbs-content')
-    text = toUTF8(html_text(tag))
-    filename = paste0(index,'-',id,".txt")
-    write.table(text, filename)
-  }
-  
-  id = 1
-  for (pg in data$href) {
-    getContent(pg, id)
-    id = id + 1
-  }
-}
-```
 ##清理文本並用jieba套件進行斷詞
 ```{r}
+rm(list = ls(all.names=TRUE))
 
 library(NLP)
 library(tm)
@@ -110,7 +84,8 @@ library(ggplot2)
 
 ass = findAssocs(tdm, "冠軍", 0.45)
 g <- unlist(ass)
-g <- cbind(names(g), g) %>% as.data.frame()
+g <- cbind(names(g), g) 
+g <- as.data.frame(g)
 colnames(g) <- c("關聯詞", "關聯度")
 #par(family=("Heiti TC Light"))
 G <- ggplot(g, aes(x = 關聯詞, y = 關聯度)) + geom_bar(stat = 'identity') + labs(x = '關聯詞',y = '關聯度')
@@ -165,22 +140,20 @@ plot_ly(data = as.data.frame(doc.tfidf),
 ##透過 Elbow Method 找出最佳集群數目（optimal number of clusters）
 ```{r}
 mydata <- t(doc.tfidf)
-wss <- (nrow(mydata)-1) * sum(apply(mydata,2,var))
-for (i in 2:300)
+mydata <- mydata[,apply(mydata, 2, var, na.rm=TRUE) != 0]
+wss <- (nrow(mydata)-1) * sum(apply(mydata, 2 ,var))
+for (i in 2:15)
   wss[i] <- sum(kmeans(mydata,centers=i)$withinss)
 
-plot(1:300, wss, type = "b", xlab = "Number of Clusters",
+plot(1:15, wss, type = "b", xlab = "Number of Clusters",
      ylab = "Within groups sum of squares",
      main = "Assessing the Optimal Number of Clusters with the Elbow Method",
      pch = 20, cex = 2)
 ```
+利用上面所求得的最佳群集數目(這裡暫時訂為14)，將文章作K-Means Clustering
 ```{r}
-num_clusters = length(which(unlist(wss) > 0.5)) +1
-num_clusters
-```
-利用上面所求得的最佳群集數目，將文章作K-Means Clustering
-```{r}
-kmeansOut = kmeans(mydata, num_clusters, nstart = 1, algorithm = c("Lloyd"), iter.max = 30)
+num_clusters = 14
+kmeansOut = kmeans(mydata, num_clusters, nstart = 20, algorithm = c("Lloyd"), iter.max = 30)
 mydata.pca = prcomp(mydata)
 mydata.kmeans = as.factor(kmeansOut$cluster)
 
@@ -189,15 +162,18 @@ kmeans_clustering
 ```
 ##利用PCA降維作圖
 由圖可看出，文章並沒有所謂明顯的分群，推測是由於NBA版為PTT上的某一分類看板，討論的主題已被歸類，因此較難再加以分群。
+且由圖可明顯看出一個問題：因為在清理文本時無法有效將非相關的字詞清掉導致資料不夠乾淨（一些網址、貼文者及留言者ID等都會被當成文本處理），因此其準確性仍稍嫌不足。
 ```{r}
 
 library(ggbiplot)
+library(scales)
+library(grid)
 
-g1 <- ggbiplot(mydata.pca, obs.scale = 1, var.scale = 1,
-              groups = mydata.kmeans, ellipse = TRUE,
+g1 <- ggbiplot(mydata.pca, obs.scale = 1, var.scale = 1, 
+              groups = mydata.kmeans, ellipse = TRUE, 
               circle = TRUE, labels = rownames(mydata))
 g1 <- g1 + scale_color_discrete(name = '')
-g1 <- g1 + theme(legend.direction = 'horizontal',
+g1 <- g1 + theme(legend.direction = 'horizontal', 
                legend.position = 'top')
-print (g1)
+print(g1)
 ```
