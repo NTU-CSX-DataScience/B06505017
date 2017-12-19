@@ -6,6 +6,6 @@
 
 作業三：文字雲 https://ntu-csx-datascience.github.io/B06505017/HW3.html
 
-作業四：TF-IDF & Kmeans
+作業四：TF-IDF & Kmeans https://ntu-csx-datascience.github.io/B06505017/HW4.html
 
 ShinyTest：https://momo1106shiny.shinyapps.io/momoTest/
