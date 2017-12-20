@@ -53,10 +53,8 @@ docs <- tm_map(docs, removeNumbers)
 docs <- tm_map(docs, stripWhitespace)
 
 mixseg = worker()
-#segment <- c("Kyrie Irving")
-#new_user_word(mixseg,segment)
-mixseg[unlist(docs)]
-
+#mixseg[unlist(docs)]
+str(mixseg[unlist(docs)])
 
 jieba_tokenizer = function(d){
   unlist(segment(d[[1]],mixseg))
@@ -67,7 +65,7 @@ jieba_tokenizer = function(d){
 seg = lapply(docs, jieba_tokenizer)
 freqFrame = as.data.frame(table(unlist(seg)))
 freqFrame = freqFrame[order(freqFrame$Freq,decreasing=TRUE), ]
-freqFrame
+head(freqFrame)
 ```
 ##利用corpus套件將文章轉成詞頻矩陣
 ```{r}
