@@ -8,4 +8,6 @@
 
 作業四：TF-IDF & Kmeans https://ntu-csx-datascience.github.io/B06505017/HW4.html
 
+作業五：ANOVA & SVM https://ntu-csx-datascience.github.io/B06505017/HW5.html
+
 ShinyTest：https://momo1106shiny.shinyapps.io/momoTest/
