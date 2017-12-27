@@ -29,6 +29,7 @@ data <- data[sample(nrow(data), 200),]
 ```{r}
 plot(data)
 ```
+-
 2.重量（克拉）與價格的關係圖
 ```{r}
 ggplot(data = data) +                        
@@ -47,7 +48,7 @@ ggplot(data = data) +
                  color = color,
                  shape = cut))  
 ```
-
+-
 4.體積（x*y*z)與重量（克拉）之關係圖
 兩者之間明顯為線性關係，也就是說鑽石的密度幾乎不變
 ```{r}
@@ -57,15 +58,15 @@ ggplot(data = data) +
                  color = color,
                  shape = cut)) 
 ```
-
+-
 5.不同種顏色的鑽石數目比較
 ```{r}
 qplot(carat, data = diamonds, geom = "histogram",
       fill = color,
       binwidth = 0.5, xlim = c(0, 3))
 ```
-
-
+-
+-
 ##Anova分析
 欲分析鑽石重量（克拉）與其價格之相關性
 
