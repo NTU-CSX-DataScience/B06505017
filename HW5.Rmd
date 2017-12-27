@@ -1,0 +1,100 @@
+---
+title: "HW5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##載入套件
+```{r}
+library(ggplot2)
+library(e1071) #for svm
+library(lattice)
+library(caret) #for confusionmatrix
+```
+##引入資料
+在此使用ggplot2內建的dataset：diamonds
+```{r}
+data <- as.data.frame(diamonds)
+#觀察資料
+head(data)
+summary(data)
+#因資料比數過多，且原始資料為按照價格排序，故先亂數取200筆資料作討論
+set.seed(1010)
+data <- data[sample(nrow(data), 200),]
+```
+##繪製圖形
+1.先繪製所有變量的scatter plot，以找出較為相關的變量組合
+```{r}
+plot(data)
+```
+2.重量（克拉）與價格的關係圖
+```{r}
+ggplot(data = data) +                        
+  geom_point(aes(x = carat, 
+                 y = price, 
+                 color = color,
+                 shape = cut))  
+```
+由圖可看出兩者略為線性關係，但仍不明顯
+
+3.將兩者取log後作圖後，明顯可看出其線性關係
+```{r}
+ggplot(data = data) +                        
+  geom_point(aes(x = log(carat), 
+                 y = log(price), 
+                 color = color,
+                 shape = cut))  
+```
+4.體積（x*y*z)與重量（克拉）之關係圖
+兩者之間明顯為線性關係，也就是說鑽石的密度幾乎不變
+```{r}
+ggplot(data = data) +                        
+  geom_point(aes(x = x*y*z, 
+                 y = carat, 
+                 color = color,
+                 shape = cut)) 
+```
+5.不同種顏色的鑽石數目比較
+```{r}
+qplot(carat, data = diamonds, geom = "histogram",
+      fill = color,
+      binwidth = 0.5, xlim = c(0, 3))
+```
+##Anova分析
+欲分析鑽石重量（克拉）與其價格之相關性
+
+假設檢定對應的虛無假設H0：μ(carat) = μ(price)
+```{r}
+anova(a <- lm(carat ~ price, data = data))
+```
+檢定的結果 p-value < 2.2e-16 也遠小於 0.05，故拒絕虛無假設
+
+##SVM分析
+預測鑽石位在哪個價錢區間class
+```{r}
+#將價格分成三個價錢區間 class3[0, 1000), class2=[1000, 10000), class1=[10000, 100000)
+for (i in 1:nrow(data)) {
+  p <- data$price[i] 
+  if (p >= 10000) { data$class[i] = 1 }
+  if (1000 <= p & p < 10000) { data$class[i] = 2 }
+  if (p < 1000) { data$class[i] = 3 }
+}
+
+#選取100筆資料作為訓練資料，另100筆資料做為測試資料
+testID = sample(nrow(data), 100, replace = FALSE)
+testID
+
+x <- subset(data[testID, ], select = -class)
+y <- as.factor(data$class[testID])
+
+svm_model = 
+  svmfit = svm(class ~ ., data = data[-testID, ], type = "C-classification") #預設似乎是跑線性迴歸，因此需將type改為分類
+
+pred = predict(svm_model, x)
+
+#畫出混淆矩陣
+confusionMatrix(pred, y)
+```
+由混淆矩陣可看出其成功率達到91%，效果相當顯著
